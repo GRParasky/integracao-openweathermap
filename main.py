@@ -1,10 +1,12 @@
 import requests, pymysql
 
 api_key = "c06cdc08dbe36d48d7af5f2d2c9f5c29"
-latitude = -26.916313867854058
-longitude = -49.07343851470612
+latitude = -25.4278
+longitude = -49.2731
 
-raw_data = requests.get(f'https://api.openweathermap.org/data/2.5/forecast?lat={latitude}&lon={longitude}&appid={api_key}')
+# raw_data = requests.get(f'https://api.openweathermap.org/data/2.5/forecast?lat={latitude}&lon={longitude}&appid={api_key}')
+
+raw_data = requests.get(f'https://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={api_key}')
 
 data = raw_data.json()
 
@@ -64,12 +66,12 @@ def execute_insert(connection: pymysql.connect, query: str, parameters: tuple = 
 conn = create_connection_to_database("localhost", 3306, "root", "q439;he'4LUZ'D<L&41>yTK&du<j", "integracao_openweathermap")
 
 insert_city = "INSERT INTO Cities(id, city, latitude, longitude) VALUES(%s, %s, %s, %s)"
-info_city = ({data["city"]["id"]}, {data["city"]["name"]}, {data["city"]["coord"]["lat"]}, {data["city"]["coord"]["lon"]})
+info_city = (data["id"], data["name"], data["coord"]["lat"], data["coord"]["lon"])
 
 execute_insert(conn, insert_city, info_city)
 
-insert_weather = '''INSERT INTO WeatherData(id, id_city, dt_forecast, temperature, feels_like, temp_min, temp_max, pressure, sea_level, grnd_level, humidity, temp_kf) 
-                           VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+insert_weather = '''INSERT INTO WeatherData(id, id_city, temperature, feels_like, temp_min, temp_max, pressure, sea_level, grnd_level, humidity) 
+                           VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON DUPLICATE KEY UPDATE temperature = VALUES(temperature),
                                             feels_like = VALUES(feels_like),
                                             temp_min = VALUES(temp_min),
@@ -77,17 +79,22 @@ insert_weather = '''INSERT INTO WeatherData(id, id_city, dt_forecast, temperatur
                                             pressure = VALUES(pressure),
                                             sea_level = VALUES(sea_level),
                                             grnd_level = VALUES(grnd_level),
-                                            humidity = VALUES(humidity),
-                                            temp_kf = VALUES(temp_kf)
+                                            humidity = VALUES(humidity)
                     '''
 
-weather_data = data["list"]
+# weather_data = data["list"]
 
-for row in weather_data:
-    info_weather = ({row["dt"]}, data["city"]["id"], row["dt_txt"], row["main"]["temp"],
-                    row["main"]["feels_like"], row["main"]["temp_min"], row["main"]["temp_max"], row["main"]["pressure"], 
-                    row["main"]["sea_level"], row["main"]["grnd_level"], row["main"]["humidity"], row["main"]["temp_kf"])
-    execute_insert(conn, insert_weather, info_weather)
+# for row in weather_data:
+#     info_weather = ({row["dt"]}, data["city"]["id"], row["main"]["temp"], row["main"]["feels_like"], 
+#                      row["main"]["temp_min"], row["main"]["temp_max"], row["main"]["pressure"], row["main"]["sea_level"],
+#                      row["main"]["grnd_level"], row["main"]["humidity"], row["main"]["temp_kf"])
+#     execute_insert(conn, insert_weather, info_weather)
+
+info_weather = (data["dt"], data["id"], data["main"]["temp"], data["main"]["feels_like"], 
+                 data["main"]["temp_min"], data["main"]["temp_max"], data["main"]["pressure"], data["main"]["sea_level"],
+                 data["main"]["grnd_level"], data["main"]["humidity"])
+
+execute_insert(conn, insert_weather, info_weather)
 
 
 conn.close()
